@@ -8,19 +8,18 @@ use super::{disk_manager::DiskManager, lru_replacer::LRUReplacer};
 pub const PAGE_SIZE: usize = 4096;
 const POOL_SIZE: usize = 100;
 
-pub struct ParallelBufferPoolWrapper<'a> {
-    pub buffer_pool: Mutex<BufferPool<'a>>,
-}
-
-pub struct BufferPool<'a> {
+pub struct BufferPool {
     pub data: Vec<Option<RawPage>>,
     pub page_table: HashMap<usize, PageTableEntry>,
     lru_replacer: LRUReplacer,
-    file_manager: &'a mut DiskManager,
+    file_manager: Arc<Mutex<DiskManager>>,
 }
 
-impl BufferPool<'_> {
-    pub fn new(file_manager: &mut DiskManager) -> BufferPool {
+impl BufferPool {
+    pub fn get_raw_page(&mut self, frame_id: usize) -> Option<&RawPage> {
+        return self.data[frame_id].as_ref();
+    }
+    pub fn new(file_manager: Arc<Mutex<DiskManager>>) -> BufferPool {
         let vec: Vec<Option<RawPage>> = vec![None; POOL_SIZE];
         return BufferPool {
             data: vec,
@@ -50,7 +49,7 @@ impl BufferPool<'_> {
                     .expect("Could not find the page table entry");
                 let frame_index = page_table_entry.frame_index;
                 if page_table_entry.dirty {
-                    self.file_manager.write_page(
+                    self.file_manager.lock().unwrap().write_page(
                         index,
                         &self.data[frame_index]
                             .as_ref()
@@ -75,6 +74,20 @@ impl BufferPool<'_> {
         return Some(self.load_page_from_disk(page_id, frame_index));
     }
 
+    /// Allocates a new page and loads it. Returns a tuple with the following format: (page_id, frame_id)
+    pub fn load_new_page(&mut self) -> Option<(usize, usize)> {
+        let page_id = self.allocate_new_page();
+        let frame_id = self.load_page(page_id)?;
+        return Some((page_id, frame_id));
+    }
+
+    pub fn allocate_new_page(&mut self) -> usize {
+        let mut lock = self.file_manager.lock().unwrap();
+        let page_id = lock.get_file_length() as usize / PAGE_SIZE;
+        lock.write_page(page_id, &RawPage::new([0; PAGE_SIZE]));
+        return page_id;
+    }
+
     pub fn unload_page_id(&mut self, page_id: usize) -> Result<(), &str> {
         let mut page_entry = self
             .page_table
@@ -93,7 +106,7 @@ impl BufferPool<'_> {
     pub fn unload_all_pages_and_write_to_file(&mut self) {
         for (page_id, page_table) in self.page_table.drain() {
             if page_table.dirty {
-                self.file_manager.write_page(
+                self.file_manager.lock().unwrap().write_page(
                     page_id,
                     &self
                         .data
@@ -109,8 +122,21 @@ impl BufferPool<'_> {
         self.lru_replacer.drop_all_pages();
     }
 
+    /// Updates the page at a given page id.
+    pub fn update_page(&mut self, page_id: usize, new_data: RawPage) -> Result<(), &str> {
+        if let Some(frame_id) = self.load_page(page_id) {
+            if let Some(page_table) = self.page_table.get_mut(&page_id) {
+                page_table.dirty = true;
+            }
+
+            self.data[frame_id] = Some(new_data);
+            return Ok(());
+        }
+        return Err("Could not update the page value");
+    }
+
     fn load_page_from_disk(&mut self, page_id: usize, frame_index: usize) -> usize {
-        let new_data = self.file_manager.read_page(page_id);
+        let new_data = self.file_manager.lock().unwrap().read_page(page_id);
         let raw_page = RawPage::new(new_data);
         self.page_table
             .insert(page_id, PageTableEntry::new(frame_index));
