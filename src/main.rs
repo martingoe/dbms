@@ -10,6 +10,7 @@ use crate::{
 
 pub mod disk_management;
 mod extendible_hashing;
+mod table;
 
 fn main() {
     let file_manager = Arc::new(Mutex::new(DiskManager::new(
