@@ -53,7 +53,7 @@ impl<
             log_id,
         );
         buffer_pool_lock
-            .update_page(directory_page_id, directory_page.as_raw_page())
+            .update_page(directory_page_id, directory_page.to_raw_page())
             .expect("Could not update directory page");
 
         buffer_pool_lock.unload_page_id(directory_page_id).unwrap();
@@ -106,7 +106,7 @@ impl<
             .expect("Could not split bucket");
             self.update_directory_and_bucket(
                 buffer_pool_lock,
-                directory_page.as_raw_page(),
+                directory_page.to_raw_page(),
                 bucket_page_id,
                 bucket_page.to_raw_page(),
             );
@@ -118,7 +118,7 @@ impl<
         }
         self.update_directory_and_bucket(
             buffer_pool_lock,
-            directory_page.as_raw_page(),
+            directory_page.to_raw_page(),
             bucket_page_id,
             bucket_page.to_raw_page(),
         );
@@ -193,7 +193,9 @@ impl<
             .unload_page_id(new_bucket_page_id)
             .expect("Could not unload new bucket page");
 
-        return Ok(());
+        Ok(())
+    }
+
     }
 }
 
@@ -244,6 +246,7 @@ fn global_split_bucket(
         .set_bucket_page_id(bucket_index, new_bucket_page_id as u32)
         .expect("Could not set the bucket page id");
 }
+
 fn get_hash<K: Hash>(key: K) -> u64 {
     let mut hasher = DefaultHasher::new();
     key.hash(&mut hasher);

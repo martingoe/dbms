@@ -44,11 +44,11 @@ impl<
             key_values.push(key_value);
         }
 
-        return HashBucketPage {
+        HashBucketPage {
             readable,
             has_been_occupied,
             key_values,
-        };
+        }
     }
     pub fn toggle_readable(&mut self, index: usize) -> Result<(), &str> {
         let element = self.readable.get_mut(index);
@@ -57,11 +57,11 @@ impl<
             *some_elem = !*some_elem;
             return Ok(());
         }
-        return Err("The index is out of bounds.");
+        Err("The index is out of bounds.")
     }
 
     pub fn is_readable(&self, index: usize) -> Option<&bool> {
-        return self.readable.get(index);
+        self.readable.get(index)
     }
 
     pub fn toggle_occupied(&mut self, index: usize) -> Result<(), &str> {
@@ -71,11 +71,11 @@ impl<
             *some_elem ^= true;
             return Ok(());
         }
-        return Err("The index is out of bounds.");
+        Err("The index is out of bounds.")
     }
 
     pub fn has_been_occupied(&self, index: usize) -> Option<&bool> {
-        return self.has_been_occupied.get(index);
+        self.has_been_occupied.get(index)
     }
 
     pub fn set_has_been_occupied(
@@ -89,18 +89,17 @@ impl<
             *some_elem = has_been_occupied;
             return Ok(());
         }
-        return Err("The index is out of bounds.");
+        Err("The index is out of bounds.")
     }
 
     pub fn is_full(&self) -> bool {
-        return self.readable.iter().all(|is_readable| *is_readable == true);
+        self.readable.iter().all(|is_readable| *is_readable == true)
     }
 
     pub fn is_empty(&self) -> bool {
-        return self
-            .readable
+        self.readable
             .iter()
-            .all(|is_readable| *is_readable == false);
+            .all(|is_readable| *is_readable == false)
     }
 
     fn first_free_index(&self) -> Option<usize> {
@@ -109,7 +108,7 @@ impl<
                 return Some(i);
             }
         }
-        return None;
+        None
     }
 
     pub fn insert(&mut self, key: K, value: V) -> Result<(), &str> {
@@ -126,16 +125,15 @@ impl<
             *key_value_pair = (key, value);
             return Ok(());
         }
-        return Err("Could not insert the values");
+        Err("Could not insert the values")
     }
 
     pub fn remove_index(&mut self, index: usize) -> Result<(K, V), &str> {
         self.toggle_readable(index).expect("Removal out of bounds");
-        return self
-            .key_values
+        self.key_values
             .splice(index..index + 1, [Default::default()])
             .next()
-            .ok_or("Could not replace the old value with defaults");
+            .ok_or("Could not replace the old value with defaults")
     }
 
     pub fn remove(&mut self, key_to_remove: &K) -> Result<(K, V), &str> {
@@ -158,15 +156,15 @@ impl<
                 .ok_or("Could not replace the old value with defaults");
         }
 
-        return Err("The requested key does not exist.");
+        Err("The requested key does not exist.")
     }
 
     pub fn key_at(&self, index: usize) -> Option<&K> {
-        return self.key_values.get(index).and_then(|key| Some(&key.0));
+        self.key_values.get(index).and_then(|key| Some(&key.0))
     }
 
     pub fn value_at(&self, index: usize) -> Option<&V> {
-        return self.key_values.get(index).and_then(|key| Some(&key.1));
+        self.key_values.get(index).and_then(|key| Some(&key.1))
     }
 
     pub fn to_raw_page(&self) -> RawPage {
@@ -198,6 +196,6 @@ impl<
         }
 
         data.append(&mut vec![0; PAGE_SIZE - data.len()]);
-        return RawPage::new(data.try_into().expect(""));
+        RawPage::new(data.try_into().expect(""))
     }
 }

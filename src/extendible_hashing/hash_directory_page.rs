@@ -33,13 +33,13 @@ impl HashDirectoryPage {
             .unwrap()
             .0;
 
-        return Ok(HashDirectoryPage {
+        Ok(HashDirectoryPage {
             page_id,
             log_id,
             global_depth,
             local_depths,
             bucket_page_ids,
-        });
+        })
     }
     pub fn new_empty(
         own_pid: u32,
@@ -62,7 +62,7 @@ impl HashDirectoryPage {
             bucket_page_ids: bucket_pids,
         }
     }
-    pub fn as_raw_page(&self) -> RawPage {
+    pub fn to_raw_page(&self) -> RawPage {
         let mut vec = Vec::with_capacity(PAGE_SIZE);
         let bincode_config = bincode::config::standard()
             .with_fixed_int_encoding()
@@ -87,7 +87,7 @@ impl HashDirectoryPage {
         RawPage::new(vec.try_into().unwrap())
     }
     pub fn get_local_depth(&self, index: usize) -> Option<&u8> {
-        return self.local_depths.get(index);
+        self.local_depths.get(index)
     }
 
     pub fn set_local_depth(&mut self, index: usize, local_depth: u8) -> Result<(), &str> {
@@ -95,32 +95,32 @@ impl HashDirectoryPage {
             *depth = local_depth;
             return Ok(());
         }
-        return Err("Index out of bounds");
+        Err("Index out of bounds")
     }
     pub fn increment_local_depth(&mut self, index: usize) -> Result<u8, &str> {
         if let Some(depth) = self.local_depths.get_mut(index) {
             *depth += 1;
             return Ok(*depth);
         }
-        return Err("Index out of bounds");
+        Err("Index out of bounds")
     }
     pub fn get_bucket_page_id(&self, index: usize) -> Option<&u32> {
-        return self.bucket_page_ids.get(index);
+        self.bucket_page_ids.get(index)
     }
     pub fn set_bucket_page_id(&mut self, index: usize, page_id: u32) -> Result<(), &str> {
         if let Some(depth) = self.bucket_page_ids.get_mut(index) {
             *depth = page_id;
             return Ok(());
         }
-        return Err("Index out of bounds");
+        Err("Index out of bounds")
     }
 
     pub fn get_global_depth(&self) -> u8 {
-        return self.global_depth;
+        self.global_depth
     }
 
     pub fn increment_global_depth(&mut self) -> u8 {
         self.global_depth += 1;
-        return self.global_depth;
+        self.global_depth
     }
 }

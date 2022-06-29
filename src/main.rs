@@ -1,3 +1,4 @@
+#![feature(assert_matches)]
 use std::sync::{Arc, Mutex};
 
 use rand::Rng;
