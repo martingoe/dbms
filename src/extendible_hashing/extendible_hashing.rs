@@ -196,6 +196,38 @@ impl<
         Ok(())
     }
 
+    fn remove(&self, key: K) -> Option<(K, V)> {
+        let mut lock = self
+            .buffer_pool
+            .lock()
+            .expect("Could not lock the buffer pool.");
+
+        let directory_frame = lock
+            .load_page(self.directory_page_id as usize)
+            .expect("Could not load directory page");
+
+        let directory_page = HashDirectoryPage::from_raw_page(
+            lock.get_raw_page(directory_frame)
+                .expect("Could not load previously loaded frame"),
+        )
+        .expect("Could not parse directory page from raw page");
+
+        let index = ExtendibleHashing::<K, V>::bucket_index_of_key(&key, &directory_page);
+
+        let bucket_pid = (*directory_page.get_bucket_page_id(index as usize).unwrap()) as usize;
+        let bucket_frame = lock.load_page(bucket_pid)?;
+
+        let mut bucket_page =
+            HashBucketPage::<K, V>::from_raw_page(lock.get_raw_page(bucket_frame).unwrap());
+        let result = bucket_page.remove(&key).ok();
+        let raw_page = bucket_page.to_raw_page();
+        self.update_directory_and_bucket(
+            &mut lock,
+            directory_page.to_raw_page(),
+            bucket_pid,
+            raw_page,
+        );
+        result
     }
 }
 
