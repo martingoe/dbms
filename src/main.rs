@@ -1,4 +1,3 @@
-#![feature(assert_matches)]
 use std::sync::{Arc, Mutex};
 
 use rand::Rng;
@@ -8,6 +7,7 @@ use crate::{
     extendible_hashing::extendible_hashing::ExtendibleHashing,
 };
 
+mod b_plus_tree;
 pub mod disk_management;
 mod extendible_hashing;
 mod table;

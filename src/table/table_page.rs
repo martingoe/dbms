@@ -1,5 +1,3 @@
-use std::assert_matches::assert_matches;
-
 use bincode::{Decode, Encode};
 
 use crate::disk_management::buffer_pool::{RawPage, PAGE_SIZE};
@@ -23,13 +21,13 @@ impl TupleHeader {
     }
 }
 const TUPLE_HEADER_SIZE: u16 = 5;
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Tuple {
     data: Vec<u8>,
     own_rid: Rid,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 struct Rid {
     page_id: u32,
     slot_id: u32,
@@ -94,6 +92,7 @@ impl TablePage {
         })
     }
 
+    /// Converts the data to a raw page, possibly to be saved again.
     pub fn to_raw_page(&self) -> RawPage {
         let config = bincode::config::standard()
             .with_fixed_int_encoding()
@@ -125,6 +124,7 @@ impl TablePage {
         RawPage::new(result_data)
     }
 
+    /// Inserts data into the table page and returns the Rid of the value.
     pub fn insert(&mut self, tuple_data: Vec<u8>) -> Option<Rid> {
         self.free_space_pointer -= tuple_data.len() as u16;
         if (self.tuple_count + 1) * TUPLE_HEADER_SIZE >= self.free_space_pointer {
@@ -221,15 +221,10 @@ fn test_remove() {
     println!("{:?}", table_page);
 
     let old_table = table_page.remove(0);
-    assert_matches!(
-        old_table,
-        Some(Tuple {
-            data: Vec { .. },
-            own_rid: Rid {
-                page_id: 0,
-                slot_id: 0
-            },
-        })
-    );
-    assert_matches!(table_page.remove(0), None);
+    let expected = Some(Tuple {
+        data: vec![0, 1],
+        own_rid: Rid::new(0, 0),
+    });
+    assert_eq!(old_table, expected);
+    assert!(table_page.remove(0).is_none());
 }
