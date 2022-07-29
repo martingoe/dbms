@@ -1,6 +1,9 @@
 use bincode::{Decode, Encode};
 
-use crate::disk_management::buffer_pool::{RawPage, PAGE_SIZE};
+use crate::{
+    common::rid::Rid,
+    disk_management::buffer_pool::{RawPage, PAGE_SIZE},
+};
 
 // | HEADER | ... FREE SPACE ... | TUPLE (n) | ... | TUPLE (1) |
 // HEADER:
@@ -27,16 +30,6 @@ struct Tuple {
     own_rid: Rid,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-struct Rid {
-    page_id: u32,
-    slot_id: u32,
-}
-impl Rid {
-    pub fn new(page_id: u32, slot_id: u32) -> Rid {
-        Rid { page_id, slot_id }
-    }
-}
 #[derive(Debug)]
 pub struct TablePage {
     own_pid: u32,

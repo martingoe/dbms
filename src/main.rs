@@ -8,6 +8,7 @@ use crate::{
 };
 
 mod b_plus_tree;
+pub mod common;
 pub mod disk_management;
 mod extendible_hashing;
 mod table;
